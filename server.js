@@ -77,24 +77,31 @@ app.get("/api/config",(req,res)=>{if(auth(req)===false)return res.status(401).js
 
 // ── UPLOAD (antes de express.json para recibir stream limpio) ──────
 app.post("/api/clients/:name/upload", function(req, res) {
-  if (!auth(req)) return res.status(401).json({ error: "No autorizado" });
+  console.log('[upload] Solicitud recibida para cliente: ' + req.params.name);
+  if (!auth(req)) { console.log('[upload] Auth fallida'); return res.status(401).json({ error: "No autorizado" }); }
   const dir = path.join(BASE_DIR, req.params.name);
-  if (!fs.existsSync(dir)) return res.status(404).json({ error: "Cliente no encontrado" });
+  // Crear carpeta si no existe
+  if (!fs.existsSync(dir)) {
+    try { fs.mkdirSync(dir, { recursive: true }); console.log('[upload] Carpeta creada: ' + dir); }
+    catch(e) { return res.status(500).json({ error: "No se pudo crear carpeta: " + e.message }); }
+  }
   const rawName = req.headers['x-filename'];
+  console.log('[upload] x-filename header: ' + rawName);
   if (!rawName) return res.status(400).json({ error: "Falta nombre de archivo" });
   let safeName;
   try { safeName = path.basename(decodeURIComponent(rawName)); } catch(e) { return res.status(400).json({ error: "Nombre invalido" }); }
   if (!safeName) return res.status(400).json({ error: "Nombre vacio" });
   const fp = path.join(dir, safeName);
+  console.log('[upload] Guardando en: ' + fp);
   const chunks = [];
   req.on('data', function(chunk) { chunks.push(chunk); });
   req.on('end', function() {
     try {
       fs.writeFileSync(fp, Buffer.concat(chunks));
-      console.log('[upload] OK: ' + fp);
+      console.log('[upload] OK: ' + fp + ' (' + Buffer.concat(chunks).length + ' bytes)');
       res.json({ ok: true, filename: safeName });
     } catch(e) {
-      console.error('[upload] Error: ' + e.message);
+      console.error('[upload] Error escribiendo: ' + e.message);
       res.status(500).json({ error: e.message });
     }
   });

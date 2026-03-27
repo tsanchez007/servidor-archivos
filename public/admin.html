@@ -1007,7 +1007,9 @@ function uploadQueue(files, idx) {
       uploadQueue(files, idx + 1);
     } else {
       $('uploadArea').style.display = 'none';
-      toast('⚠️ Error subiendo ' + file.name, true);
+      var msg = '⚠️ Error ' + xhr.status;
+      try { var r = JSON.parse(xhr.responseText); if (r.error) msg += ': ' + r.error; } catch(e) {}
+      toast(msg, true);
     }
   };
   xhr.onerror = function() {
