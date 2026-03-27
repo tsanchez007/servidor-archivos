@@ -2,8 +2,10 @@
 node_modules/
 
 # Archivos de clientes (datos privados, se respaldan con migrar_mac.sh / migrar_windows.bat)
-clientes/
-archivos_clientes/
+clientes/*
+!clientes/.gitkeep
+archivos_clientes/*
+!archivos_clientes/.gitkeep
 
 # Archivos del sistema macOS
 .DS_Store
