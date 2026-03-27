@@ -75,20 +75,33 @@ app.post("/api/restart-tunnel", function(req, res) {
 // ── CONFIG ────────────────────────────────────────────────────────
 app.get("/api/config",(req,res)=>{if(auth(req)===false)return res.status(401).json({});res.json({baseDir:BASE_DIR});});
 
-// ── UPLOAD (debe ir ANTES de express.json para no consumir el stream) ──
+// ── UPLOAD (antes de express.json para recibir stream limpio) ──────
 app.post("/api/clients/:name/upload", function(req, res) {
   if (!auth(req)) return res.status(401).json({ error: "No autorizado" });
   const dir = path.join(BASE_DIR, req.params.name);
   if (!fs.existsSync(dir)) return res.status(404).json({ error: "Cliente no encontrado" });
   const rawName = req.headers['x-filename'];
   if (!rawName) return res.status(400).json({ error: "Falta nombre de archivo" });
-  const safeName = path.basename(decodeURIComponent(rawName));
+  let safeName;
+  try { safeName = path.basename(decodeURIComponent(rawName)); } catch(e) { return res.status(400).json({ error: "Nombre invalido" }); }
+  if (!safeName) return res.status(400).json({ error: "Nombre vacio" });
   const fp = path.join(dir, safeName);
-  const ws = fs.createWriteStream(fp);
-  req.pipe(ws);
-  ws.on('finish', function() { res.json({ ok: true, filename: safeName }); });
-  ws.on('error', function(e) { try { res.status(500).json({ error: e.message }); } catch(_){} });
-  req.on('error', function() { ws.destroy(); });
+  const chunks = [];
+  req.on('data', function(chunk) { chunks.push(chunk); });
+  req.on('end', function() {
+    try {
+      fs.writeFileSync(fp, Buffer.concat(chunks));
+      console.log('[upload] OK: ' + fp);
+      res.json({ ok: true, filename: safeName });
+    } catch(e) {
+      console.error('[upload] Error: ' + e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+  req.on('error', function(e) {
+    console.error('[upload] Error request: ' + e.message);
+    if (!res.headersSent) res.status(500).json({ error: e.message });
+  });
 });
 
 // ── MIDDLEWARE & STATIC ────────────────────────────────────────────
