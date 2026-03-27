@@ -349,7 +349,20 @@ label{display:block;font-size:.71rem;color:var(--muted);
           <div class="card">
             <div class="ch">
               <span>📁 Archivos</span>
-              <button class="btn btn-sm btn-out" id="btnrf">↺ Actualizar</button>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-sm btn-out" id="btnrf">↺ Actualizar</button>
+                <label class="btn btn-sm" id="lblUpload" style="background:rgba(108,99,255,.2);color:var(--accent2);border:1px solid rgba(108,99,255,.4);cursor:pointer;margin:0">
+                  📤 Subir
+                  <input type="file" id="fileInput" multiple style="display:none">
+                </label>
+              </div>
+            </div>
+            <!-- Barra de progreso -->
+            <div id="uploadArea" style="display:none;padding:10px 16px;border-bottom:1px solid var(--border)">
+              <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px" id="uploadLabel">Subiendo...</div>
+              <div style="background:var(--bg);border-radius:20px;height:6px;overflow:hidden">
+                <div id="uploadBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:20px;transition:width .2s"></div>
+              </div>
             </div>
             <div class="cb">
               <div id="flist"><p class="empty">Cargando...</p></div>
@@ -961,6 +974,49 @@ function delLink(token) {
   if (!confirm('¿Eliminar este link?')) return;
   fetch('/api/links/' + token + '?password=' + pwd, {method:'DELETE'})
     .then(function(){ loadLinks(); toast('🗑️ Link eliminado'); });
+}
+
+// ── UPLOAD ────────────────────────────────────────────────────────
+$('fileInput').addEventListener('change', function() {
+  var files = Array.from(this.files);
+  if (!files.length || !cur) return;
+  this.value = '';
+  uploadQueue(files, 0);
+});
+
+function uploadQueue(files, idx) {
+  if (idx >= files.length) {
+    $('uploadArea').style.display = 'none';
+    loadFiles(cur);
+    toast('✅ ' + files.length + ' archivo' + (files.length > 1 ? 's subidos' : ' subido'));
+    return;
+  }
+  var file = files[idx];
+  $('uploadArea').style.display = 'block';
+  $('uploadLabel').textContent = 'Subiendo ' + (idx + 1) + ' de ' + files.length + ': ' + file.name;
+  $('uploadBar').style.width = '0%';
+
+  var xhr = new XMLHttpRequest();
+  xhr.upload.onprogress = function(e) {
+    if (e.lengthComputable) {
+      $('uploadBar').style.width = Math.round(e.loaded / e.total * 100) + '%';
+    }
+  };
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      uploadQueue(files, idx + 1);
+    } else {
+      $('uploadArea').style.display = 'none';
+      toast('⚠️ Error subiendo ' + file.name, true);
+    }
+  };
+  xhr.onerror = function() {
+    $('uploadArea').style.display = 'none';
+    toast('⚠️ Error de red al subir ' + file.name, true);
+  };
+  xhr.open('POST', '/api/clients/' + encodeURIComponent(cur) + '/upload?password=' + pwd);
+  xhr.setRequestHeader('X-Filename', encodeURIComponent(file.name));
+  xhr.send(file);
 }
 
 // ── COPIAR URL DEL TÚNEL ──────────────────────────────────────────

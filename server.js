@@ -88,6 +88,22 @@ app.post("/api/clients",(req,res)=>{if(auth(req)===false)return res.status(401).
 app.delete("/api/clients/:name",(req,res)=>{if(auth(req)===false)return res.status(401).json({});const dir=path.join(BASE_DIR,req.params.name);if(fs.existsSync(dir)===false)return res.status(404).json({});fs.rmSync(dir,{recursive:true});res.json({ok:true});});
 app.get("/api/clients/:name/files",(req,res)=>{if(auth(req)===false)return res.status(401).json({});const dir=path.join(BASE_DIR,req.params.name);if(fs.existsSync(dir)===false)return res.status(404).json({});const files=fs.readdirSync(dir).filter(f=>fs.statSync(path.join(dir,f)).isFile()).map(name=>{const s=fs.statSync(path.join(dir,name));return{name,size:s.size};});res.json(files);});
 
+// ── UPLOAD ────────────────────────────────────────────────────────
+app.post("/api/clients/:name/upload", function(req, res) {
+  if (!auth(req)) return res.status(401).json({ error: "No autorizado" });
+  const dir = path.join(BASE_DIR, req.params.name);
+  if (!fs.existsSync(dir)) return res.status(404).json({ error: "Cliente no encontrado" });
+  const rawName = req.headers['x-filename'];
+  if (!rawName) return res.status(400).json({ error: "Falta nombre de archivo" });
+  const safeName = path.basename(decodeURIComponent(rawName));
+  const fp = path.join(dir, safeName);
+  const ws = fs.createWriteStream(fp);
+  req.pipe(ws);
+  ws.on('finish', function() { res.json({ ok: true, filename: safeName }); });
+  ws.on('error', function(e) { res.status(500).json({ error: e.message }); });
+  req.on('error', function() { ws.destroy(); });
+});
+
 // ── LINKS ─────────────────────────────────────────────────────────
 app.post("/api/create-link",(req,res)=>{if(auth(req)===false)return res.status(401).json({});const client=req.body.client;const filename=req.body.filename;const label=req.body.label;const expiresIn=req.body.expiresIn;const fp=path.join(BASE_DIR,client,filename);if(fs.existsSync(fp)===false)return res.status(404).json({error:"No encontrado"});const token=crypto.randomBytes(16).toString("hex");const links=loadLinks();links[token]={client,filename,label:label||filename,created:new Date().toISOString(),expiresAt:expiresIn?new Date(Date.now()+expiresIn*1000).toISOString():null,downloads:0};saveLinks(links);res.json({token,url:"/d/"+token});});
 app.get("/api/links",(req,res)=>{if(auth(req)===false)return res.status(401).json({});const client=req.query.client;const links=loadLinks();if(client){const f={};Object.entries(links).forEach(function(e){if(e[1].client===client)f[e[0]]=e[1];});return res.json(f);}res.json(links);});
