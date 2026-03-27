@@ -302,7 +302,13 @@ label{display:block;font-size:.71rem;color:var(--muted);
       <button class="btn btn-sm" id="btnCopyConv" style="width:100%;margin-bottom:6px;background:rgba(108,99,255,.2);color:var(--accent2);border:1px solid rgba(108,99,255,.4);display:none">📋 Copiar link</button>
       <button class="btn btn-sm" id="btnRefreshNgrok" style="width:100%;background:rgba(74,222,128,.08);color:var(--muted);border:1px solid var(--border2)">↺ Reconectar túnel</button>
       <input type="hidden" id="convNgrok">
-      <div id="ngrokUrl" style="display:none"></div>
+
+      <!-- URL del túnel activo -->
+      <div id="ngrokUrlBox" style="display:none;margin-top:10px">
+        <div style="font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">🔗 URL pública activa</div>
+        <div class="ngrok-url" id="ngrokUrl" title="Clic para copiar"></div>
+        <button class="btn btn-sm" id="btnCopyTunnel" style="width:100%;margin-top:5px;background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.3)">📋 Copiar URL</button>
+      </div>
     </div>
 
     <div class="snew">
@@ -504,6 +510,12 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closePr
 // ── NGROK ──────────────────────────────────────────────────────────
 var ngrokTimer = null;
 
+function showTunnelUrl(url) {
+  if (!url) { $('ngrokUrlBox').style.display = 'none'; return; }
+  $('ngrokUrl').textContent = url;
+  $('ngrokUrlBox').style.display = 'block';
+}
+
 function loadNgrok() {
   if (!pwd) return;
   api('/api/tunnel-url?password=' + pwd).then(function(d) {
@@ -514,6 +526,7 @@ function loadNgrok() {
       dot.className = 'ngrok-dot on';
       status.className = 'ngrok-status ok';
       status.textContent = '✅ Túnel activo';
+      showTunnelUrl(d.url);
       updatePortalDisplay();
       syncConvNgrokField();
       if (ngrokTimer) { clearInterval(ngrokTimer); ngrokTimer = null; }
@@ -521,6 +534,7 @@ function loadNgrok() {
       dot.className = 'ngrok-dot spin';
       status.className = 'ngrok-status';
       status.textContent = 'Túnel no conectado';
+      showTunnelUrl(null);
     }
   }).catch(function() {
     $('ngrokStatus').textContent = 'Error al conectar';
@@ -679,6 +693,7 @@ $('btnRefreshNgrok').addEventListener('click', function() {
     $('ngrokDot').className = 'ngrok-dot on';
     $('ngrokStatus').textContent = '✅ Túnel activo';
     $('ngrokStatus').className = 'ngrok-status ok';
+    showTunnelUrl(url);
     updatePortalDisplay();
     toast('✅ Nueva URL activa');
   }).catch(function() {
@@ -947,6 +962,18 @@ function delLink(token) {
   fetch('/api/links/' + token + '?password=' + pwd, {method:'DELETE'})
     .then(function(){ loadLinks(); toast('🗑️ Link eliminado'); });
 }
+
+// ── COPIAR URL DEL TÚNEL ──────────────────────────────────────────
+$('ngrokUrl').addEventListener('click', function() {
+  if (!ngrokBase) return;
+  navigator.clipboard.writeText(ngrokBase).catch(function(){});
+  toast('📋 URL copiada');
+});
+$('btnCopyTunnel').addEventListener('click', function() {
+  if (!ngrokBase) return;
+  navigator.clipboard.writeText(ngrokBase).catch(function(){});
+  toast('📋 URL copiada');
+});
 
 // ── MENÚ HAMBURGUESA ──────────────────────────────────────────────
 function openSidebar() {
