@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mi Nube — Portal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#07080d;--surface:#0e0f17;--surface2:#13141f;--border:#1e1f2e;
+ --accent:#818cf8;--accent2:#c4b5fd;--text:#eef0f8;--muted:#555771;
+ --green:#34d399;--red:#f87171;--amber:#fbbf24;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+/* BG mesh */
+body::before{content:'';position:fixed;inset:0;
+ background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(129,140,248,.06) 0%,transparent 60%),
+ radial-gradient(ellipse 60% 40% at 80% 80%,rgba(196,181,253,.04) 0%,transparent 60%);
+ pointer-events:none;z-index:0}
+/* HEADER */
+header{position:relative;z-index:1;padding:28px 32px 0;display:flex;align-items:center;gap:14px}
+.logo-ring{width:44px;height:44px;border-radius:13px;
+ background:linear-gradient(135deg,var(--accent),var(--accent2));
+ display:flex;align-items:center;justify-content:center;font-size:1.3rem;
+ box-shadow:0 0 24px rgba(129,140,248,.3)}
+.htext h1{font-size:1.05rem;font-weight:700;letter-spacing:-.02em}
+.htext p{font-size:.72rem;color:var(--muted)}
+/* MAIN */
+main{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:32px 20px 80px}
+.section-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;
+ color:var(--muted);margin-bottom:14px;font-family:'DM Mono',monospace}
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+/* CARD */
+.fcard{background:var(--surface);border:1px solid var(--border);
+ border-radius:16px;overflow:hidden;cursor:pointer;
+ transition:border-color .2s,transform .2s,box-shadow .2s;position:relative}
+.fcard:hover{border-color:rgba(129,140,248,.4);transform:translateY(-3px);
+ box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.fcard.locked{opacity:.75}
+/* PREVIEW AREA */
+.prev{height:160px;background:var(--surface2);display:flex;align-items:center;
+ justify-content:center;overflow:hidden;position:relative}
+.prev img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.fcard:hover .prev img{transform:scale(1.04)}
+.prev video{width:100%;height:100%;object-fit:cover}
+.prev .big-icon{font-size:3rem;opacity:.5}
+.prev-pdf{width:100%;height:100%;border:none}
+/* INFO */
+.finfo{padding:12px 14px}
+.fname{font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;
+ text-overflow:ellipsis;margin-bottom:4px}
+.fmeta{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.fsize{font-size:.67rem;color:var(--muted);font-family:'DM Mono',monospace}
+.dl-btn{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;
+ font-size:.7rem;font-weight:600;border:none;cursor:pointer;transition:all .15s;text-decoration:none}
+.dl-btn.yes{background:rgba(52,211,153,.12);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+.dl-btn.yes:hover{background:rgba(52,211,153,.22);border-color:var(--green)}
+.dl-btn.no{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.2);cursor:default}
+/* MODAL */
+#modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+#modal.open{display:flex}
+.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px)}
+.modal-box{position:relative;z-index:1;background:var(--surface);border:1px solid var(--border);
+ border-radius:20px;width:100%;max-width:860px;max-height:90vh;overflow:hidden;
+ display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.7)}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);
+ display:flex;align-items:center;gap:12px}
+.modal-head .icon{font-size:1.4rem}
+.modal-head h2{flex:1;font-size:.95rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal-close{background:rgba(255,255,255,.06);border:none;width:32px;height:32px;
+ border-radius:8px;color:var(--text);font-size:1.1rem;cursor:pointer;
+ display:flex;align-items:center;justify-content:center;transition:background .15s}
+.modal-close:hover{background:rgba(255,255,255,.12)}
+.modal-body{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;background:var(--bg);min-height:300px}
+.modal-body img{max-width:100%;max-height:75vh;object-fit:contain;display:block}
+.modal-body video{max-width:100%;max-height:75vh}
+.modal-body iframe{width:100%;height:70vh;border:none}
+.modal-body .no-prev{color:var(--muted);font-size:.85rem;text-align:center;padding:40px}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.modal-foot .meta{font-size:.72rem;color:var(--muted);font-family:'DM Mono',monospace}
+.dl-btn-lg{display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;
+ font-size:.85rem;font-weight:700;border:none;cursor:pointer;text-decoration:none;transition:all .2s}
+.dl-btn-lg.yes{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px rgba(129,140,248,.35)}
+.dl-btn-lg.yes:hover{box-shadow:0 6px 28px rgba(129,140,248,.5);transform:translateY(-1px)}
+.dl-btn-lg.no{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.3);cursor:default}
+/* Loading / empty */
+.loading{display:flex;align-items:center;justify-content:center;height:60vh;color:var(--muted);flex-direction:column;gap:12px}
+.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state .big{font-size:3rem;margin-bottom:12px}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo-ring"> </div>
+ <div class="htext">
+ <h1 id="clientName">Mi Nube</h1>
+ <p id="clientSub">Portal de archivos</p>
+ </div>
+</header>
+<main>
+ <div id="loadingState" class="loading">
+ <div class="spinner"></div>
+ <span>Cargando archivos...</span>
+ </div>
+ <div id="content" style="display:none">
+ <p class="section-label" id="fileCount"></p>
+ <div class="grid" id="grid"></div>
+ </div>
+ <div id="emptyState" class="empty-state" style="display:none">
+ <div class="big"> </div>
+ <p>No hay archivos disponibles aún</p>
+ </div>
+</main>
+<!-- MODAL -->
+<div id="modal">
+ <div class="modal-bg" id="modalBg"></div>
+ <div class="modal-box">
+ <div class="modal-head">
+ <span class="icon" id="mIcon"> </span>
+ <h2 id="mTitle"></h2>
+ <button class="modal-close" id="modalClose">✕</button>
+ </div>
+ <div class="modal-body" id="mBody"></div>
+ <div class="modal-foot">
+ <span class="meta" id="mMeta"></span>
+ <a id="mDlBtn" class="dl-btn-lg no" href="#"> Sin permiso de descarga</a>
+ </div>
+ </div>
+</div>
+<script>
+var client = location.pathname.split('/').pop();
+var files = [];
+function fmtSize(b){
+ if(!b)return '';
+ if(b<1024)return b+' B';
+ if(b<1048576)return (b/1024).toFixed(1)+' KB';
+ if(b<1073741824)return (b/1048576).toFixed(1)+' MB';
+ return (b/1073741824).toFixed(2)+' GB';
+}
+function fileType(name){
+ var ext=(name.split('.').pop()||'').toLowerCase();
+ if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext))return 'image';
+ if(['mp4','mov','avi','webm','mkv'].includes(ext))return 'video';
+ if(ext==='pdf')return 'pdf';
+ if(['mp3','wav','ogg','aac','flac'].includes(ext))return 'audio';
+ return 'other';
+}
+function fileIcon(name){
+ var t=fileType(name);
+ return {image:' ',video:' ',pdf:' ',audio:' ',other:' '}[t];
+}
+function fileUrl(name){
+ return '/api/portal-file/'+encodeURIComponent(client)+'/'+encodeURIComponent(name);
+}
+function dlUrl(name){
+ return '/api/portal-download/'+encodeURIComponent(client)+'/'+encodeURIComponent(name);
+}
+function buildPreview(f){
+ var t=fileType(f.name);
+ var url=fileUrl(f.name);
+ if(t==='image')return '<img src="'+url+'" alt="'+f.name+'" loading="lazy">';
+ if(t==='video')return '<video src="'+url+'" muted preload="metadata"></video>';
+ if(t==='pdf')return '<div class="big-icon"> </div>';
+ if(t==='audio')return '<div class="big-icon"> </div>';
+ return '<div class="big-icon">'+fileIcon(f.name)+'</div>';
+}
+function renderGrid(data){
+ files=data.files||[];
+ document.getElementById('clientName').textContent=data.client;
+ document.getElementById('clientSub').textContent='Portal de archivos privado';
+ document.title='Mi Nube — '+data.client;
+ if(!files.length){
+ document.getElementById('loadingState').style.display='none';
+ document.getElementById('emptyState').style.display='block';
+ return;
+ }
+ document.getElementById('fileCount').textContent=files.length+' archivo'+(files.length===1?'':'s');
+ var grid=document.getElementById('grid');
+ grid.innerHTML=files.map(function(f,i){
+ return '<div class="fcard'+(f.canDownload?'':' locked')+'" data-i="'+i+'">'
+ +'<div class="prev">'+buildPreview(f)+'</div>'
+ +'<div class="finfo">'
+ +'<div class="fname" title="'+f.name+'">'+f.name+'</div>'
+ +'<div class="fmeta">'
+ +'<span class="fsize">'+fmtSize(f.size)+'</span>'
+ +(f.canDownload
+ ?'<a class="dl-btn yes" href="'+dlUrl(f.name)+'" download onclick="event.stopPropagation()"> Descargar</a>'
+ :'<span class="dl-btn no"> Solo vista</span>')
+ +'</div></div></div>';
+ }).join('');
+ grid.querySelectorAll('.fcard').forEach(function(el){
+ el.addEventListener('click',function(){ openModal(parseInt(el.dataset.i)); });
+ });
+ document.getElementById('loadingState').style.display='none';
+ document.getElementById('content').style.display='block';
+}
+function openModal(i){
+ var f=files[i];
+ var t=fileType(f.name);
+ var url=fileUrl(f.name);
+ document.getElementById('mIcon').textContent=fileIcon(f.name);
+ document.getElementById('mTitle').textContent=f.name;
+ document.getElementById('mMeta').textContent=fmtSize(f.size);
+ var body=document.getElementById('mBody');
+ if(t==='image'){
+ body.innerHTML='<img src="'+url+'" alt="'+f.name+'">';
+ } else if(t==='video'){
+ body.innerHTML='<video src="'+url+'" controls autoplay style="max-width:100%;max-height:75vh"></video>';
+ } else if(t==='pdf'){
+ body.innerHTML='<iframe src="'+url+'" title="'+f.name+'"></iframe>';
+ } else if(t==='audio'){
+ body.innerHTML='<div style="padding:40px;text-align:center"><div style="font-size:4rem;margin-bottom:16px"> </div><audio src="'+url+'" controls style="width:100%;max-width:400px"></audio></div>';
+ } else {
+ body.innerHTML='<div class="no-prev"><div style="font-size:3rem;margin-bottom:12px"> </div><p>Vista previa no disponible para este tipo de archivo</p></div>';
+ }
+ var dlBtn=document.getElementById('mDlBtn');
+ if(f.canDownload){
+ dlBtn.className='dl-btn-lg yes';
+ dlBtn.textContent=' Descargar archivo';
+ dlBtn.href=dlUrl(f.name);
+ dlBtn.setAttribute('download','');
+ } else {
+ dlBtn.className='dl-btn-lg no';
+ dlBtn.textContent=' Sin permiso de descarga';
+ dlBtn.href='#';
+ dlBtn.removeAttribute('download');
+ dlBtn.onclick=function(e){ e.preventDefault(); };
+ }
+ document.getElementById('modal').className='open';
+ document.body.style.overflow='hidden';
+}
+function closeModal(){
+ document.getElementById('modal').className='';
+ document.body.style.overflow='';
+ var b=document.getElementById('mBody');
+ b.innerHTML=''; // stop video/audio
+}
+document.getElementById('modalClose').addEventListener('click',closeModal);
+document.getElementById('modalBg').addEventListener('click',closeModal);
+document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeModal(); });
+// Load
+fetch('/api/portal/'+encodeURIComponent(client))
+ .then(function(r){ return r.json(); })
+ .then(renderGrid)
+ .catch(function(){
+ document.getElementById('loadingState').style.display='none';
+ document.getElementById('emptyState').style.display='block';
+ });
+</script>
+</body>
+</html>

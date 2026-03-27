@@ -1,0 +1,23 @@
+# Dependencias
+node_modules/
+
+# Archivos de clientes (datos privados, se respaldan con migrar_mac.sh / migrar_windows.bat)
+clientes/
+archivos_clientes/
+
+# Archivos del sistema macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Variables de entorno
+.env
+.env.local
+
+# Archivos de túnel / credenciales
+*.json.bak
