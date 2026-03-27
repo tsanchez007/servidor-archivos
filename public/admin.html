@@ -616,8 +616,32 @@ $('btnCopyPortal').addEventListener('click', function() {
 });
 
 $('btnRefreshNgrok').addEventListener('click', function() {
-  loadNgrok();
-  toast('↺ Reconectando túnel...');
+  ngrokBase = null;
+  $('ngrokDot').className = 'ngrok-dot spin';
+  $('ngrokStatus').textContent = 'Reiniciando túnel...';
+  $('ngrokStatus').className = 'ngrok-status';
+  toast('↺ Obteniendo nueva URL...');
+
+  api('/api/restart-tunnel', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ password: pwd })
+  }).then(function() {
+    return new Promise(function(resolve, reject) {
+      pollUntilNgrokReady(resolve, reject, 0);
+    });
+  }).then(function(url) {
+    $('ngrokDot').className = 'ngrok-dot on';
+    $('ngrokStatus').textContent = '✅ Túnel activo';
+    $('ngrokStatus').className = 'ngrok-status ok';
+    updatePortalDisplay();
+    toast('✅ Nueva URL activa');
+  }).catch(function() {
+    $('ngrokDot').className = 'ngrok-dot';
+    $('ngrokStatus').textContent = 'Error al reconectar';
+    $('ngrokStatus').className = 'ngrok-status err';
+    toast('⚠️ Error al reiniciar túnel', true);
+  });
 });
 
 // ── LOGIN ──────────────────────────────────────────────────────────

@@ -3,14 +3,23 @@ const express=require("express");const path=require("path");const fs=require("fs
 // ── CLOUDFLARE TUNNEL ─────────────────────────────────────────────
 var tunnelUrl = null;
 var tunnelReady = false;
+var tunnelProc = null;
 
 function startCloudflare() {
-  if (tunnelReady) return;
+  // Matar proceso anterior si existe
+  if (tunnelProc) {
+    try { tunnelProc.kill(); } catch(e) {}
+    tunnelProc = null;
+  }
+  tunnelUrl = null;
+  tunnelReady = false;
+
   console.log("[cloudflare] Iniciando túnel en puerto " + PORT + "...");
 
   var proc = spawn("cloudflared", ["tunnel", "--url", "http://localhost:" + PORT], {
     detached: false
   });
+  tunnelProc = proc;
 
   function parseUrl(data) {
     var msg = data.toString();
@@ -31,6 +40,11 @@ function startCloudflare() {
   });
 
   proc.on("exit", function(code) {
+    if (proc === tunnelProc) {
+      tunnelReady = false;
+      tunnelUrl = null;
+      tunnelProc = null;
+    }
     if (code !== 0 && code !== null) {
       console.error("[cloudflare] Proceso terminó con código " + code);
     }
@@ -49,6 +63,13 @@ app.post("/api/start-tunnel", function(req, res) {
   if (tunnelReady) return res.json({ ok: true, already: true });
   startCloudflare();
   res.json({ ok: true, started: true });
+});
+
+// Endpoint: restart tunnel para obtener nueva URL
+app.post("/api/restart-tunnel", function(req, res) {
+  if (!auth(req)) return res.status(401).json({});
+  startCloudflare();
+  res.json({ ok: true });
 });
 
 // ── CONFIG ────────────────────────────────────────────────────────
