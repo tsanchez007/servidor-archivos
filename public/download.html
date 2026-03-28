@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Descarga – Mi Nube</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0f;color:#e8e8f0;font-family:'Segoe UI',system-ui,sans-serif;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background-image:radial-gradient(ellipse 50% 50% at 50% 30%,rgba(108,99,255,.1) 0%,transparent 70%)}
+.card{background:#111118;border:1px solid #2a2a38;border-radius:20px;
+  padding:44px 40px;width:420px;max-width:calc(100vw - 32px);text-align:center;
+  box-shadow:0 32px 80px rgba(0,0,0,.6)}
+.icon{font-size:3.2rem;margin-bottom:16px;display:block}
+h1{font-size:1.4rem;font-weight:800;letter-spacing:-.03em;margin-bottom:8px}
+.meta{color:#6b6b80;font-size:.83rem;margin-bottom:6px}
+.size{color:#a78bfa;font-size:.83rem;margin-bottom:24px;font-weight:600}
+.btn-dl{display:inline-flex;align-items:center;gap:10px;
+  background:linear-gradient(135deg,#6c63ff,#a78bfa);
+  border:none;border-radius:12px;padding:15px 32px;
+  color:#fff;font-size:1rem;font-weight:700;cursor:pointer;
+  text-decoration:none;transition:transform .15s,box-shadow .15s;
+  box-shadow:0 8px 32px rgba(108,99,255,.4)}
+.btn-dl:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(108,99,255,.55)}
+.btn-dl:active{transform:translateY(0)}
+.divider{border:none;border-top:1px solid #22222e;margin:24px 0}
+.info{font-size:.75rem;color:#6b6b80;line-height:1.7}
+.info span{color:#e8e8f0;font-weight:600}
+.badge-exp{display:inline-block;padding:3px 11px;border-radius:20px;
+  font-size:.72rem;font-weight:600;margin-top:8px}
+.badge-ok{background:rgba(74,222,128,.12);color:#4ade80;border:1px solid #4ade80}
+.badge-ex{background:rgba(255,101,132,.12);color:#ff6584;border:1px solid #ff6584}
+
+/* States */
+#state-loading{display:block}
+#state-ready{display:none}
+#state-expired{display:none}
+#state-error{display:none}
+
+.err-icon{font-size:3rem;margin-bottom:14px}
+.err-title{font-size:1.2rem;font-weight:700;margin-bottom:8px}
+.err-msg{color:#6b6b80;font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Loading -->
+  <div id="state-loading">
+    <span class="icon">⏳</span>
+    <h1>Cargando...</h1>
+    <p class="meta">Verificando enlace</p>
+  </div>
+
+  <!-- Ready -->
+  <div id="state-ready">
+    <span class="icon" id="dl-icon">📄</span>
+    <h1 id="dl-label">Archivo</h1>
+    <p class="meta" id="dl-filename"></p>
+    <p class="size" id="dl-size"></p>
+    <a class="btn-dl" id="dl-btn" href="#">
+      ⬇ Descargar archivo
+    </a>
+    <hr class="divider">
+    <div class="info">
+      <div>Descargas: <span id="dl-count">0</span></div>
+      <div id="dl-exp-wrap"></div>
+    </div>
+  </div>
+
+  <!-- Expired -->
+  <div id="state-expired">
+    <div class="err-icon">⏰</div>
+    <div class="err-title">Enlace expirado</div>
+    <p class="err-msg">Este enlace de descarga ya no es válido.<br>Solicita uno nuevo al remitente.</p>
+  </div>
+
+  <!-- Error -->
+  <div id="state-error">
+    <div class="err-icon">❌</div>
+    <div class="err-title">Enlace no válido</div>
+    <p class="err-msg">Este enlace no existe o fue eliminado.</p>
+  </div>
+
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+function show(state) {
+  ['loading','ready','expired','error'].forEach(function(s){
+    $('state-' + s).style.display = s === state ? 'block' : 'none';
+  });
+}
+
+function fmtSize(b) {
+  if (!b) return '';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+  return (b/1073741824).toFixed(2) + ' GB';
+}
+
+function fileIcon(name) {
+  var ext = (name.split('.').pop() || '').toLowerCase();
+  return {pdf:'📄',zip:'🗜️',rar:'🗜️',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',
+    mp4:'🎬',mov:'🎬',mp3:'🎵',wav:'🎵',doc:'📝',docx:'📝',
+    xls:'📊',xlsx:'📊',ppt:'📋',pptx:'📋',txt:'📃'}[ext] || '📁';
+}
+
+var token = location.pathname.split('/').pop();
+
+fetch('/api/link/' + token)
+  .then(function(r){
+    if (r.status === 410) { show('expired'); return null; }
+    if (!r.ok) { show('error'); return null; }
+    return r.json();
+  })
+  .then(function(data){
+    if (!data) return;
+    $('dl-icon').textContent = fileIcon(data.filename);
+    $('dl-label').textContent = data.label || data.filename;
+    $('dl-filename').textContent = data.filename;
+    $('dl-size').textContent = fmtSize(data.size);
+    $('dl-count').textContent = data.downloads;
+    $('dl-btn').href = '/api/download/' + token;
+    if (data.expiresAt) {
+      var d = new Date(data.expiresAt);
+      var expired = new Date() > d;
+      $('dl-exp-wrap').innerHTML = expired
+        ? '<span class="badge-exp badge-ex">⏰ Expirado</span>'
+        : 'Expira: <span>' + d.toLocaleDateString('es') + ' ' + d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) + '</span>';
+    }
+    show('ready');
+  })
+  .catch(function(){ show('error'); });
+</script>
+</body>
+</html>

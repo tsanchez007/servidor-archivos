@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mi Nube – Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--surface:#111118;--border:#22222e;--border2:#2a2a38;
+  --accent:#6c63ff;--accent2:#a78bfa;--text:#e8e8f0;--muted:#6b6b80;
+  --red:#ff6584;--green:#4ade80;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+/* ── LOGIN ── */
+#login{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:radial-gradient(ellipse 60% 60% at 50% 40%,rgba(108,99,255,.12) 0%,transparent 70%)}
+.box{background:var(--surface);border:1px solid var(--border2);border-radius:18px;
+  padding:42px 36px;width:340px;box-shadow:0 24px 64px rgba(0,0,0,.5)}
+.box h1{font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:4px}
+.box .sub{color:var(--muted);font-size:.83rem;margin-bottom:22px}
+input,select{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border2);
+  border-radius:9px;padding:11px 13px;color:var(--text);font-size:.88rem;
+  outline:none;margin-bottom:11px;transition:border .2s}
+input:focus,select:focus{border-color:var(--accent)}
+.btn{background:var(--accent);border:none;border-radius:9px;padding:12px;
+  color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;width:100%;
+  transition:background .2s,transform .1s}
+.btn:hover{background:#7c75ff}
+.btn:active{transform:scale(.98)}
+.btn-sm{width:auto;padding:6px 13px;font-size:.76rem}
+.btn-out{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.btn-out:hover{background:var(--accent);color:#fff}
+.btn-red{background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn-red:hover{background:var(--red);color:#fff}
+.err{color:var(--red);font-size:.76rem;margin-top:6px;min-height:18px}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.side{position:fixed;top:0;left:0;width:258px;height:100vh;
+  background:var(--surface);border-right:1px solid var(--border);
+  overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:0}
+.side::-webkit-scrollbar{width:4px}
+.side::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.logo-icon{width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.logo-text h2{font-size:.95rem;font-weight:800;letter-spacing:-.02em}
+.logo-text span{font-size:.68rem;color:var(--muted)}
+
+.snew{background:rgba(108,99,255,.08);border:1px dashed rgba(108,99,255,.3);
+  border-radius:10px;padding:14px;margin-bottom:16px}
+.snew h3{font-size:.76rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.st{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+
+.ci{display:flex;align-items:center;gap:9px;padding:9px 10px;
+  border-radius:9px;cursor:pointer;margin-bottom:2px;transition:background .15s;border:1px solid transparent}
+.ci:hover{background:rgba(255,255,255,.04)}
+.ci.on{background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4)}
+.av{width:31px;height:31px;border-radius:8px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:#fff;font-size:.82rem}
+.cn{font-size:.83rem;font-weight:600}
+.cc{font-size:.67rem;color:var(--muted)}
+
+/* ── NGROK SECTION ── */
+.sngrok{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);
+  border-radius:10px;padding:14px;margin-bottom:16px;margin-top:4px}
+.sngrok h3{font-size:.76rem;color:var(--green);margin-bottom:10px;
+  text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px}
+.ngrok-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;flex-shrink:0}
+.ngrok-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.ngrok-dot.spin{background:var(--accent2);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ngrok-url{background:var(--bg);border:1px solid var(--border2);border-radius:7px;
+  padding:8px 10px;font-size:.65rem;color:var(--accent);word-break:break-all;
+  font-family:monospace;margin-bottom:10px;cursor:pointer;transition:border .15s;
+  min-height:32px;display:flex;align-items:center}
+.ngrok-url:hover{border-color:var(--accent)}
+.ngrok-status{font-size:.67rem;color:var(--muted);margin-bottom:8px}
+.ngrok-status.ok{color:var(--green)}
+.ngrok-status.err{color:var(--red)}
+
+/* ── CONVERTIDOR ── */
+.sconv{background:rgba(108,99,255,.07);border:1px solid rgba(108,99,255,.25);
+  border-radius:10px;padding:14px;margin-bottom:16px}
+.sconv h3{font-size:.76rem;color:var(--accent2);margin-bottom:10px;
+  text-transform:uppercase;letter-spacing:.06em}
+.conv-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border2);
+  border-radius:8px;padding:9px 11px;color:var(--text);font-size:.72rem;font-family:monospace;
+  outline:none;margin-bottom:8px;transition:border .2s;resize:none;height:56px}
+.conv-input:focus{border-color:var(--accent)}
+.conv-result{background:var(--bg);border:1px solid rgba(74,222,128,.3);border-radius:8px;
+  padding:9px 11px;font-size:.7rem;color:var(--green);word-break:break-all;
+  font-family:monospace;min-height:40px;margin-bottom:8px;cursor:pointer;
+  transition:border .15s;display:flex;align-items:center;opacity:.5}
+.conv-result.ready{opacity:1;border-color:var(--green)}
+.conv-result:hover.ready{border-color:rgba(74,222,128,.7)}
+.conv-hint{font-size:.64rem;color:var(--muted);line-height:1.5}
+
+/* ── MAIN ── */
+.main{margin-left:258px;padding:26px}
+.noc{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:70vh;color:var(--muted);gap:10px;text-align:center}
+.noc .big{font-size:2.8rem}
+.noc p{font-size:.9rem}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.topbar h2{font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+.path{background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:8px;padding:9px 13px;font-size:.71rem;color:var(--muted);
+  margin-bottom:16px;word-break:break-all;font-family:monospace}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:13px;margin-bottom:18px}
+.ch{padding:13px 17px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:.81rem;font-weight:700;letter-spacing:.01em}
+.cb{padding:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Files */
+.fi{display:flex;align-items:center;gap:9px;padding:9px 10px;
+  border-radius:8px;cursor:pointer;transition:background .15s;border:1px solid transparent}
+.fi:hover{background:rgba(255,255,255,.04)}
+.fi.on{background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4)}
+.fic{font-size:1.15rem;flex-shrink:0}
+.fn{font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.fs{font-size:.67rem;color:var(--muted)}
+
+/* ── FILE PREVIEW BUTTON ── */
+.fi-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.btn-preview{background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.35);
+  border-radius:6px;padding:4px 9px;font-size:.68rem;color:var(--accent2);
+  cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-preview:hover{background:rgba(108,99,255,.3);border-color:var(--accent)}
+.btn-play{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.35);
+  border-radius:6px;padding:4px 9px;font-size:.68rem;color:var(--green);
+  cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-play:hover{background:rgba(74,222,128,.25);border-color:var(--green)}
+
+/* Links */
+.li{background:rgba(255,255,255,.025);border:1px solid var(--border);
+  border-radius:9px;padding:12px;margin-bottom:8px;transition:border .15s}
+.li:hover{border-color:var(--border2)}
+.ll{font-size:.83rem;font-weight:700;margin-bottom:2px}
+.lf{font-size:.69rem;color:var(--muted);margin-bottom:7px}
+.lu{background:var(--bg);border:1px solid var(--border2);border-radius:6px;
+  padding:7px 10px;font-size:.68rem;color:var(--accent);
+  word-break:break-all;margin-bottom:7px;cursor:pointer;transition:border .15s}
+.lu:hover{border-color:var(--accent)}
+.lmeta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.badge{border-radius:20px;padding:3px 10px;font-size:.65rem;
+  border:1px solid var(--border2);color:var(--muted)}
+.badge.ok{color:var(--green);border-color:var(--green)}
+.badge.ex{color:var(--red);border-color:var(--red)}
+.la{display:flex;gap:6px}
+
+.empty{color:var(--muted);font-size:.82rem;text-align:center;padding:24px 0}
+
+/* Toggle permisos */
+.tog{position:relative;width:36px;height:20px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tslider{position:absolute;inset:0;background:rgba(255,255,255,.12);border-radius:20px;
+  cursor:pointer;transition:background .2s}
+.tslider:before{content:'';position:absolute;width:14px;height:14px;
+  left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s}
+.tog input:checked+.tslider{background:var(--green)}
+.tog input:checked+.tslider:before{transform:translateX(16px)}
+
+/* Portal URL */
+.portal-row{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.portal-url-box{flex:1;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.25);
+  border-radius:8px;padding:9px 13px;font-size:.7rem;color:var(--green);
+  word-break:break-all;font-family:monospace;cursor:pointer;transition:border .15s;min-height:36px}
+.portal-url-box:hover{border-color:var(--green)}
+.btn-green{background:transparent;color:var(--green);border:1px solid rgba(74,222,128,.4)}
+.btn-green:hover{background:rgba(74,222,128,.15)}
+label{display:block;font-size:.71rem;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.sel-file{background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.4);
+  border-radius:7px;padding:8px 12px;font-size:.79rem;color:var(--accent);margin-bottom:12px}
+
+/* ── HAMBURGER & RESPONSIVE ── */
+.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:1100;
+  background:var(--surface);border:1px solid var(--border2);border-radius:9px;
+  padding:9px 11px;cursor:pointer;color:var(--text);font-size:1.1rem;
+  align-items:center;justify-content:center;gap:5px;transition:background .2s}
+.hamburger:hover{background:rgba(255,255,255,.07)}
+.hamburger span{font-size:.72rem;font-weight:700;color:var(--muted)}
+
+.side-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
+  z-index:980;backdrop-filter:blur(3px)}
+.side-overlay.show{display:block}
+
+@media(max-width:900px){
+  .side{padding-bottom:80px}
+  .main{overflow-x:hidden}
+  .hamburger{display:flex}
+  .side{transform:translateX(-110%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:990}
+  .side.open{transform:translateX(0)}
+  .main{margin-left:0 !important;padding:16px;padding-top:58px}
+  .grid2{grid-template-columns:1fr}
+  .fn{max-width:180px}
+  .portal-row{flex-wrap:wrap}
+  .portal-url-box{min-width:0;width:100%}
+}
+
+@media(max-width:480px){
+  .side{padding-bottom:100px}
+  .hamburger{top:8px;left:8px;padding:7px 10px;font-size:.95rem}
+  .side{width:88vw}
+  .box{width:92vw;padding:28px 20px}
+  .main{padding:12px;padding-top:54px}
+  .topbar{flex-wrap:wrap;gap:8px}
+  .topbar h2{font-size:1rem}
+  .grid2{gap:12px}
+  .ch{font-size:.76rem;padding:11px 13px}
+  .cb{padding:12px}
+  .fn{max-width:140px}
+  .fi-actions .btn-preview,.fi-actions .btn-play{padding:4px 7px;font-size:.64rem}
+}
+
+/* Toast */
+#toast{position:fixed;bottom:22px;right:22px;background:var(--green);
+  color:#051a0a;padding:11px 18px;border-radius:9px;font-size:.82rem;
+  font-weight:700;transform:translateY(70px);opacity:0;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);z-index:9999}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.err{background:var(--red);color:#fff}
+
+/* ── PREVIEW MODAL ── */
+#prevModal{display:none;position:fixed;inset:0;z-index:8000;align-items:center;justify-content:center}
+#prevModal.open{display:flex}
+#prevBg{position:absolute;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(6px)}
+.prev-box{position:relative;z-index:1;background:var(--surface);border:1px solid var(--border2);
+  border-radius:16px;width:min(92vw,860px);max-height:90vh;display:flex;flex-direction:column;
+  overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.7)}
+.prev-head{display:flex;align-items:center;gap:10px;padding:14px 18px;
+  border-bottom:1px solid var(--border);flex-shrink:0}
+.prev-icon{font-size:1.4rem}
+.prev-name{font-size:.9rem;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prev-size{font-size:.7rem;color:var(--muted);margin-right:8px;flex-shrink:0}
+.prev-close{background:rgba(255,255,255,.07);border:1px solid var(--border2);border-radius:7px;
+  padding:5px 11px;color:var(--text);font-size:.8rem;cursor:pointer;transition:background .15s;flex-shrink:0}
+.prev-close:hover{background:rgba(255,255,255,.14)}
+.prev-body{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;
+  padding:20px;min-height:200px;background:var(--bg)}
+.prev-body img{max-width:100%;max-height:72vh;border-radius:8px;object-fit:contain}
+.prev-body video{max-width:100%;max-height:72vh;border-radius:8px}
+.prev-body audio{width:100%;max-width:440px}
+.prev-body iframe{width:100%;height:70vh;border:none;border-radius:8px;background:#fff}
+.prev-nope{text-align:center;color:var(--muted);padding:40px}
+.prev-nope .big-icon{font-size:3rem;margin-bottom:12px}
+.prev-nope p{font-size:.85rem}
+.prev-audio-wrap{text-align:center;padding:30px 20px}
+.prev-audio-wrap .audio-icon{font-size:4rem;margin-bottom:18px}
+.prev-audio-wrap audio{width:100%;max-width:420px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="box">
+    <h1>☁ Mi Nube</h1>
+    <p class="sub">Panel de administración</p>
+    <input type="password" id="pwd" placeholder="Contraseña" autocomplete="current-password">
+    <button class="btn" id="btnlogin">Entrar</button>
+    <p class="err" id="lerr"></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- HAMBURGER -->
+  <button class="hamburger" id="btnMenu" aria-label="Menú">
+    ☰ <span>Menú</span>
+  </button>
+
+  <!-- OVERLAY (cierra el sidebar al tocar fuera) -->
+  <div class="side-overlay" id="sideOverlay"></div>
+
+  <!-- SIDEBAR -->
+  <div class="side" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">☁</div>
+      <div class="logo-text">
+        <h2>Mi Nube</h2>
+        <span id="hlabel"></span>
+      </div>
+    </div>
+
+    <!-- 🌐 GENERAR LINK PARA COMPARTIR -->
+    <div class="sngrok">
+      <h3><span class="ngrok-dot spin" id="ngrokDot"></span>Generar link</h3>
+      <p class="ngrok-status" id="ngrokStatus">Túnel no conectado</p>
+      <input type="text" id="convInput" placeholder="http://localhost:3000/p/Cliente" style="font-family:monospace;font-size:.72rem;margin-bottom:8px" title="Pega aquí el link local">
+      <button class="btn" id="btnGenerar" style="width:100%;margin-bottom:8px">⚡ Generar link</button>
+      <div class="conv-result" id="convResult" title="Clic para copiar" style="display:none"></div>
+      <button class="btn btn-sm" id="btnCopyConv" style="width:100%;margin-bottom:6px;background:rgba(108,99,255,.2);color:var(--accent2);border:1px solid rgba(108,99,255,.4);display:none">📋 Copiar link</button>
+      <button class="btn btn-sm" id="btnRefreshNgrok" style="width:100%;background:rgba(74,222,128,.08);color:var(--muted);border:1px solid var(--border2)">↺ Reconectar túnel</button>
+      <input type="hidden" id="convNgrok">
+
+      <!-- URL del túnel activo -->
+      <div id="ngrokUrlBox" style="display:none;margin-top:10px">
+        <div style="font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">🔗 URL pública activa</div>
+        <div class="ngrok-url" id="ngrokUrl" title="Clic para copiar"></div>
+        <button class="btn btn-sm" id="btnCopyTunnel" style="width:100%;margin-top:5px;background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.3)">📋 Copiar URL</button>
+      </div>
+    </div>
+
+    <div class="snew">
+      <h3>+ Nuevo cliente</h3>
+      <input type="text" id="ncn" placeholder="Nombre del cliente">
+      <button class="btn" id="btnnc">Crear carpeta</button>
+      <p class="err" id="cerr"></p>
+    </div>
+
+    <div class="st">Clientes</div>
+    <div id="clist"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="noc" id="noc">
+      <div class="big">☁</div>
+      <p>Selecciona un cliente para comenzar</p>
+    </div>
+
+    <div id="cpanel" style="display:none">
+      <div class="topbar">
+        <h2 id="ctitle"></h2>
+        <button class="btn btn-sm btn-red" id="btndel">Eliminar cliente</button>
+      </div>
+      <div class="path" id="cpath"></div>
+
+      <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">🌐 Link del portal (funciona desde cualquier dispositivo)</div>
+      <div class="portal-row">
+        <div class="portal-url-box" id="cportal" title="Clic para copiar">—</div>
+        <button class="btn btn-sm btn-green" id="btnCopyPortal">📋 Copiar</button>
+        <a class="btn btn-sm btn-out" id="btnOpenPortal" href="#" target="_blank">↗ Abrir</a>
+      </div>
+
+      <div class="grid2">
+        <!-- Archivos -->
+        <div>
+          <div class="card">
+            <div class="ch">
+              <span>📁 Archivos</span>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-sm btn-out" id="btnrf">↺ Actualizar</button>
+                <label class="btn" id="lblUpload" style="background:rgba(108,99,255,.2);color:var(--accent2);border:1px solid rgba(108,99,255,.4);cursor:pointer;margin:0;padding:8px 18px;font-size:.85rem">
+                  📤 Subir
+                  <input type="file" id="fileInput" multiple style="display:none">
+                </label>
+              </div>
+            </div>
+            <!-- Barra de progreso -->
+            <div id="uploadArea" style="display:none;padding:10px 16px;border-bottom:1px solid var(--border)">
+              <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px" id="uploadLabel">Subiendo...</div>
+              <div style="background:var(--bg);border-radius:20px;height:6px;overflow:hidden">
+                <div id="uploadBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:20px;transition:width .2s"></div>
+              </div>
+            </div>
+            <div class="cb">
+              <div id="flist"><p class="empty">Cargando...</p></div>
+            </div>
+          </div>
+
+          <!-- Generar link -->
+          <div class="card">
+            <div class="ch">🔗 Generar link</div>
+            <div class="cb">
+              <div id="nosel" class="empty" style="padding:12px 0">Selecciona un archivo de arriba</div>
+              <div id="lform" style="display:none">
+                <div class="sel-file">📄 <span id="selname"></span></div>
+                <label>Nombre del link</label>
+                <input type="text" id="llabel" placeholder="ej: Propuesta Mayo 2025">
+                <label>Expiración</label>
+                <select id="lexp">
+                  <option value="">Sin expiración</option>
+                  <option value="3600">1 hora</option>
+                  <option value="86400">24 horas</option>
+                  <option value="604800">7 días</option>
+                  <option value="2592000">30 días</option>
+                </select>
+                <button class="btn" id="btngl">⚡ Generar y copiar link</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Links activos -->
+        <div>
+          <div class="card" style="height:fit-content">
+            <div class="ch">
+              <span>✅ Links activos</span>
+              <button class="btn btn-sm btn-out" id="btnrl">↺ Actualizar</button>
+            </div>
+            <div class="cb">
+              <div id="llist"><p class="empty">Sin links</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PREVIEW MODAL ── -->
+<div id="prevModal">
+  <div id="prevBg"></div>
+  <div class="prev-box">
+    <div class="prev-head">
+      <span class="prev-icon" id="prevIcon"></span>
+      <span class="prev-name" id="prevName"></span>
+      <span class="prev-size" id="prevSize"></span>
+      <button class="prev-close" id="prevClose">✕ Cerrar</button>
+    </div>
+    <div class="prev-body" id="prevBody"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var pwd, cur, sel, base = location.origin;
+var ngrokBase = null;
+var serverBaseDir = '';
+function $(id){ return document.getElementById(id); }
+
+function toast(msg, isErr) {
+  var t = $('toast');
+  t.textContent = msg;
+  t.className = isErr ? 'err show' : 'show';
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){ t.className = ''; }, 2800);
+}
+
+function api(url, opts) {
+  return fetch(url, opts).then(function(r){ return r.json(); });
+}
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+  return (b/1073741824).toFixed(2) + ' GB';
+}
+
+function fileIcon(name) {
+  var ext = (name.split('.').pop() || '').toLowerCase();
+  return {pdf:'📄',zip:'🗜️',rar:'🗜️',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',webp:'🖼️',
+    mp4:'🎬',mov:'🎬',avi:'🎬',mkv:'🎬',webm:'🎬',
+    mp3:'🎵',wav:'🎵',ogg:'🎵',m4a:'🎵',aac:'🎵',
+    doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📋',pptx:'📋',txt:'📃'}[ext] || '📁';
+}
+
+// Determina el tipo de archivo para vista previa
+function fileType(name) {
+  var ext = (name.split('.').pop() || '').toLowerCase();
+  if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return 'image';
+  if (['mp4','mov','avi','mkv','webm'].includes(ext)) return 'video';
+  if (['mp3','wav','ogg','m4a','aac'].includes(ext)) return 'audio';
+  if (ext === 'pdf') return 'pdf';
+  if (ext === 'txt') return 'text';
+  return 'other';
+}
+
+// Devuelve si un archivo tiene vista previa disponible
+function hasPreview(name) {
+  return fileType(name) !== 'other';
+}
+
+// URL para acceder al archivo del cliente desde el admin
+function fileUrl(filename) {
+  return '/api/portal-file/' + encodeURIComponent(cur) + '/' + encodeURIComponent(filename);
+}
+
+// ── PREVIEW MODAL ─────────────────────────────────────────────────
+function openPreview(name, size) {
+  var t = fileType(name);
+  var url = fileUrl(name);
+
+  $('prevIcon').textContent = fileIcon(name);
+  $('prevName').textContent = name;
+  $('prevSize').textContent = fmtSize(size);
+
+  var body = $('prevBody');
+  if (t === 'image') {
+    body.innerHTML = '<img src="' + url + '" alt="' + name + '">';
+  } else if (t === 'video') {
+    body.innerHTML = '<video src="' + url + '" controls autoplay style="max-width:100%;max-height:72vh;border-radius:8px"></video>';
+  } else if (t === 'audio') {
+    body.innerHTML = '<div class="prev-audio-wrap"><div class="audio-icon">🎵</div><audio src="' + url + '" controls autoplay></audio></div>';
+  } else if (t === 'pdf') {
+    body.innerHTML = '<iframe src="' + url + '" title="' + name + '"></iframe>';
+  } else if (t === 'text') {
+    body.innerHTML = '<p style="color:var(--muted);font-size:.8rem">Cargando...</p>';
+    fetch(url).then(function(r){ return r.text(); }).then(function(txt){
+      body.innerHTML = '<pre style="color:var(--text);font-size:.78rem;white-space:pre-wrap;word-break:break-word;padding:10px;max-height:68vh;overflow:auto;background:var(--bg);border-radius:8px;width:100%">' + txt.replace(/</g,'&lt;') + '</pre>';
+    });
+  } else {
+    body.innerHTML = '<div class="prev-nope"><div class="big-icon">' + fileIcon(name) + '</div><p>Vista previa no disponible para este tipo de archivo</p></div>';
+  }
+
+  $('prevModal').className = 'open';
+  document.body.style.overflow = 'hidden';
+}
+
+function closePreview() {
+  $('prevModal').className = '';
+  document.body.style.overflow = '';
+  $('prevBody').innerHTML = ''; // detiene video/audio
+}
+
+$('prevClose').addEventListener('click', closePreview);
+$('prevBg').addEventListener('click', closePreview);
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closePreview(); });
+
+// ── NGROK ──────────────────────────────────────────────────────────
+var ngrokTimer = null;
+
+function showTunnelUrl(url) {
+  if (!url) { $('ngrokUrlBox').style.display = 'none'; return; }
+  $('ngrokUrl').textContent = url;
+  $('ngrokUrlBox').style.display = 'block';
+}
+
+function loadNgrok() {
+  if (!pwd) return;
+  api('/api/tunnel-url?password=' + pwd).then(function(d) {
+    var dot = $('ngrokDot');
+    var status = $('ngrokStatus');
+    if (d.ready && d.url) {
+      ngrokBase = d.url;
+      dot.className = 'ngrok-dot on';
+      status.className = 'ngrok-status ok';
+      status.textContent = '✅ Túnel activo';
+      showTunnelUrl(d.url);
+      updatePortalDisplay();
+      syncConvNgrokField();
+      if (ngrokTimer) { clearInterval(ngrokTimer); ngrokTimer = null; }
+    } else {
+      dot.className = 'ngrok-dot spin';
+      status.className = 'ngrok-status';
+      status.textContent = 'Túnel no conectado';
+      showTunnelUrl(null);
+    }
+  }).catch(function() {
+    $('ngrokStatus').textContent = 'Error al conectar';
+    $('ngrokStatus').className = 'ngrok-status err';
+    $('ngrokDot').className = 'ngrok-dot';
+  });
+}
+
+// ── CONVERTIDOR LOCAL → NGROK ─────────────────────────────────────
+var lastConverted = '';
+
+function getConvBase() {
+  return (ngrokBase || $('convNgrok').value.trim()).replace(/\/$/, '');
+}
+
+function buildConvertedUrl(raw, convBase) {
+  try {
+    var u = new URL(raw.trim());
+    var n = new URL(convBase);
+    u.protocol = n.protocol;
+    u.hostname = n.hostname;
+    u.port = n.port || '';
+    return u.toString();
+  } catch(e) { return ''; }
+}
+
+function showConverted(url) {
+  $('convResult').textContent = url;
+  $('convResult').className = 'conv-result ready';
+  $('convResult').style.display = 'flex';
+  $('btnCopyConv').style.display = 'block';
+  lastConverted = url;
+}
+
+function setGenerarState(loading, msg) {
+  var btn = $('btnGenerar');
+  btn.disabled = loading;
+  btn.textContent = loading ? ('⏳ ' + msg) : '⚡ Generar link';
+}
+
+function syncConvNgrokField() {
+  if (ngrokBase && !$('convNgrok').value) {
+    $('convNgrok').value = ngrokBase;
+  }
+}
+
+function pollUntilNgrokReady(resolve, reject, attempts) {
+  if (attempts > 30) { reject('timeout'); return; }
+  api('/api/tunnel-url?password=' + pwd).then(function(d) {
+    if (d.ready && d.url) {
+      ngrokBase = d.url;
+      syncConvNgrokField();
+      updatePortalDisplay();
+      resolve(d.url);
+    } else {
+      setTimeout(function(){ pollUntilNgrokReady(resolve, reject, attempts + 1); }, 2000);
+    }
+  }).catch(function(){ reject('error'); });
+}
+
+$('btnGenerar').addEventListener('click', function() {
+  var raw = $('convInput').value.trim();
+  if (!raw) {
+    $('convInput').focus();
+    toast('Pega primero el link local', true);
+    return;
+  }
+  var convBase = getConvBase();
+  if (convBase) {
+    var result = buildConvertedUrl(raw, convBase);
+    if (result) { showConverted(result); }
+    else { toast('Link no válido — pega una URL completa', true); }
+    return;
+  }
+  setGenerarState(true, 'Iniciando túnel...');
+  $('ngrokStatus').textContent = 'Iniciando túnel...';
+  $('convResult').style.display = 'none';
+  $('btnCopyConv').style.display = 'none';
+
+  api('/api/start-tunnel', { method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ password: pwd }) })
+  .then(function() {
+    setGenerarState(true, 'Esperando túnel...');
+    return new Promise(function(resolve, reject) {
+      pollUntilNgrokReady(resolve, reject, 0);
+    });
+  })
+  .then(function(ngrokUrl) {
+    setGenerarState(false);
+    $('ngrokStatus').textContent = '✅ Túnel activo';
+    $('ngrokStatus').className = 'ngrok-status ok';
+    var result = buildConvertedUrl(raw, ngrokUrl);
+    if (result) { showConverted(result); }
+    else { toast('Ngrok listo pero el link local no es válido', true); }
+  })
+  .catch(function(err) {
+    setGenerarState(false);
+    toast(err === 'timeout'
+      ? '⚠️ Ngrok tardó demasiado — instala el binario en la carpeta del proyecto'
+      : '⚠️ Error al iniciar túnel', true);
+  });
+});
+
+$('convResult').addEventListener('click', function() {
+  if (!lastConverted) return;
+  navigator.clipboard.writeText(lastConverted).catch(function(){});
+  toast('📋 Link copiado');
+});
+
+$('btnCopyConv').addEventListener('click', function() {
+  if (!lastConverted) return;
+  navigator.clipboard.writeText(lastConverted).catch(function(){});
+  toast('📋 Link copiado');
+});
+
+// ── PORTAL URL ────────────────────────────────────────────────────
+function getPortalUrl(name) {
+  return (ngrokBase || base) + '/p/' + encodeURIComponent(name);
+}
+
+function updatePortalDisplay() {
+  if (!cur) return;
+  var url = getPortalUrl(cur);
+  $('cportal').textContent = url;
+  $('btnOpenPortal').href = url;
+}
+
+$('cportal').addEventListener('click', function() {
+  if (!cur) return;
+  navigator.clipboard.writeText(getPortalUrl(cur)).catch(function(){});
+  toast('📋 Link del portal copiado');
+});
+
+$('btnCopyPortal').addEventListener('click', function() {
+  if (!cur) return;
+  navigator.clipboard.writeText(getPortalUrl(cur)).catch(function(){});
+  toast('📋 Link del portal copiado');
+});
+
+$('btnRefreshNgrok').addEventListener('click', function() {
+  ngrokBase = null;
+  $('ngrokDot').className = 'ngrok-dot spin';
+  $('ngrokStatus').textContent = 'Reiniciando túnel...';
+  $('ngrokStatus').className = 'ngrok-status';
+  toast('↺ Obteniendo nueva URL...');
+
+  api('/api/restart-tunnel', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ password: pwd })
+  }).then(function() {
+    return new Promise(function(resolve, reject) {
+      pollUntilNgrokReady(resolve, reject, 0);
+    });
+  }).then(function(url) {
+    $('ngrokDot').className = 'ngrok-dot on';
+    $('ngrokStatus').textContent = '✅ Túnel activo';
+    $('ngrokStatus').className = 'ngrok-status ok';
+    showTunnelUrl(url);
+    updatePortalDisplay();
+    toast('✅ Nueva URL activa');
+  }).catch(function() {
+    $('ngrokDot').className = 'ngrok-dot';
+    $('ngrokStatus').textContent = 'Error al reconectar';
+    $('ngrokStatus').className = 'ngrok-status err';
+    toast('⚠️ Error al reiniciar túnel', true);
+  });
+});
+
+// ── LOGIN ──────────────────────────────────────────────────────────
+$('btnlogin').addEventListener('click', function(){
+  var p = $('pwd').value;
+  if (!p) return;
+  api('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({password: p})
+  }).then(function(d){
+    if (d.ok) {
+      pwd = p;
+      $('login').style.display = 'none';
+      $('app').style.display = 'block';
+      $('hlabel').textContent = base;
+      api('/api/config?password=' + p).then(function(cfg){ serverBaseDir = cfg.baseDir || ''; });
+      loadClients();
+      loadNgrok();
+      ngrokTimer = setInterval(loadNgrok, 3000);
+    } else {
+      $('lerr').textContent = 'Contraseña incorrecta';
+    }
+  });
+});
+$('pwd').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') $('btnlogin').click();
+});
+
+// ── CLIENTS ───────────────────────────────────────────────────────
+function loadClients() {
+  api('/api/clients?password=' + pwd).then(function(clients){
+    var el = $('clist');
+    if (!Array.isArray(clients) || !clients.length) {
+      el.innerHTML = '<p class="empty" style="padding:10px">Sin clientes aún</p>';
+      return;
+    }
+    el.innerHTML = clients.map(function(c){
+      return '<div class="ci' + (cur===c.name?' on':'') + '" data-name="' + c.name + '">'
+        + '<div class="av">' + c.name[0].toUpperCase() + '</div>'
+        + '<div><div class="cn">' + c.name + '</div>'
+        + '<div class="cc">' + c.fileCount + ' archivo' + (c.fileCount===1?'':'s') + '</div></div>'
+        + '</div>';
+    }).join('');
+    el.querySelectorAll('.ci').forEach(function(el){
+      el.addEventListener('click', function(){ selectClient(el.dataset.name); });
+    });
+  });
+}
+
+$('btnnc').addEventListener('click', function(){
+  var name = $('ncn').value.trim();
+  if (!name) return;
+  api('/api/clients', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({password: pwd, name: name})
+  }).then(function(d){
+    if (d.ok) {
+      $('ncn').value = '';
+      $('cerr').textContent = '';
+      toast('✅ Cliente "' + name + '" creado');
+      loadClients();
+      selectClient(name);
+    } else {
+      $('cerr').textContent = d.error || 'Error';
+    }
+  });
+});
+
+function selectClient(name) {
+  cur = name; sel = null;
+  $('noc').style.display = 'none';
+  $('cpanel').style.display = 'block';
+  $('ctitle').textContent = name;
+  $('cpath').textContent = (serverBaseDir ? serverBaseDir + '/' : '') + name + '/';
+  updatePortalDisplay();
+  $('nosel').style.display = 'block';
+  $('lform').style.display = 'none';
+  loadClients();
+  loadFiles();
+  loadLinks();
+}
+
+$('btndel').addEventListener('click', function(){
+  if (!confirm('¿Eliminar cliente "' + cur + '" y todos sus archivos?')) return;
+  fetch('/api/clients/' + cur + '?password=' + pwd, {method:'DELETE'})
+    .then(function(){
+      cur = null;
+      $('noc').style.display = 'flex';
+      $('cpanel').style.display = 'none';
+      loadClients();
+      toast('🗑️ Cliente eliminado');
+    });
+});
+
+// ── FILES ─────────────────────────────────────────────────────────
+$('btnrf').addEventListener('click', loadFiles);
+
+var curPerms = {};
+var curFiles = []; // guardar lista para referencias del modal
+
+function savePerm(filename, allowed) {
+  curPerms[filename] = allowed;
+  api('/api/perms/' + cur, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({password: pwd, perms: curPerms})
+  }).then(function(d){
+    if (d.ok) toast(allowed ? '✅ Descarga activada' : '🔒 Descarga desactivada');
+  });
+}
+
+function loadFiles() {
+  if (!cur) return;
+  Promise.all([
+    api('/api/clients/' + cur + '/files?password=' + pwd),
+    api('/api/perms/' + cur + '?password=' + pwd)
+  ]).then(function(res){
+    var files = res[0];
+    curPerms = res[1] || {};
+    curFiles = Array.isArray(files) ? files : [];
+    var el = $('flist');
+    if (!curFiles.length) {
+      el.innerHTML = '<p class="empty">Sin archivos<br><small style="font-size:.7rem">Pega archivos en la carpeta del cliente</small></p>';
+      return;
+    }
+    el.innerHTML = curFiles.map(function(f){
+      var checked = curPerms[f.name] === true ? 'checked' : '';
+      var fname = f.name.replace(/"/g,'&quot;');
+      var t = fileType(f.name);
+      var isMedia = t === 'video' || t === 'audio';
+      var canPrev = hasPreview(f.name);
+
+      // Botón de acción: ▶ Reproducir para multimedia, 👁 Vista previa para el resto
+      var prevBtn = '';
+      if (isMedia) {
+        prevBtn = '<button class="btn-play btn-prev-action" data-name="' + fname + '" data-size="' + f.size + '" onclick="event.stopPropagation()">▶ Reproducir</button>';
+      } else if (canPrev) {
+        prevBtn = '<button class="btn-preview btn-prev-action" data-name="' + fname + '" data-size="' + f.size + '" onclick="event.stopPropagation()">👁 Vista previa</button>';
+      }
+
+      return '<div class="fi' + (sel===f.name?' on':'') + '" data-name="' + fname + '" style="justify-content:space-between">'
+        + '<div style="display:flex;align-items:center;gap:9px;min-width:0">'
+        + '<span class="fic">' + fileIcon(f.name) + '</span>'
+        + '<div><div class="fn" title="' + f.name + '">' + f.name + '</div>'
+        + '<div class="fs">' + fmtSize(f.size) + '</div></div>'
+        + '</div>'
+        + '<div class="fi-actions">'
+        + prevBtn
+        + '<label class="tog" title="Permitir descarga" onclick="event.stopPropagation()">'
+        + '<input type="checkbox" data-file="' + fname + '" ' + checked + '>'
+        + '<span class="tslider"></span></label>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    el.querySelectorAll('.fi').forEach(function(row){
+      row.addEventListener('click', function(){ selectFile(row.dataset.name); });
+    });
+    el.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        savePerm(cb.dataset.file, cb.checked);
+      });
+    });
+    // Botones de vista previa / reproducir
+    el.querySelectorAll('.btn-prev-action').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        openPreview(btn.dataset.name, parseInt(btn.dataset.size));
+      });
+    });
+  });
+}
+
+function selectFile(name) {
+  sel = name;
+  $('selname').textContent = name;
+  $('nosel').style.display = 'none';
+  $('lform').style.display = 'block';
+  $('llabel').value = name.replace(/\.[^.]+$/, '');
+  loadFiles();
+}
+
+// ── CREATE LINK ───────────────────────────────────────────────────
+$('btngl').addEventListener('click', function(){
+  if (!sel || !cur) return;
+  var label = $('llabel').value || sel;
+  var exp = $('lexp').value;
+  var linkBase = ngrokBase || base;
+  api('/api/create-link', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({password:pwd, client:cur, filename:sel, label:label,
+      expiresIn: exp ? parseInt(exp) : null})
+  }).then(function(d){
+    if (d.url) {
+      navigator.clipboard.writeText(linkBase + d.url).catch(function(){});
+      toast('🔗 Link copiado al portapapeles');
+      loadLinks();
+    }
+  });
+});
+
+// ── LINKS ─────────────────────────────────────────────────────────
+$('btnrl').addEventListener('click', loadLinks);
+
+function loadLinks() {
+  if (!cur) return;
+  api('/api/links?password=' + pwd + '&client=' + cur).then(function(links){
+    var el = $('llist');
+    var entries = Object.entries(links);
+    if (!entries.length) {
+      el.innerHTML = '<p class="empty">Sin links generados</p>';
+      return;
+    }
+    var linkBase = ngrokBase || base;
+    el.innerHTML = entries.reverse().map(function(e){
+      var token = e[0], link = e[1];
+      var url = linkBase + '/d/' + token;
+      var expired = link.expiresAt && new Date() > new Date(link.expiresAt);
+      var expLabel = link.expiresAt
+        ? (expired ? 'Expirado' : 'Expira ' + new Date(link.expiresAt).toLocaleDateString('es'))
+        : 'Sin expiración';
+      return '<div class="li">'
+        + '<div class="ll">' + link.label + '</div>'
+        + '<div class="lf">📄 ' + link.filename + '</div>'
+        + '<div class="lu" data-url="' + url + '">' + url + '</div>'
+        + '<div class="lmeta">'
+        + '<span class="badge ' + (expired?'ex':'ok') + '">' + (expired?'❌ Expirado':'✅ Activo') + '</span>'
+        + '<span class="badge">' + link.downloads + ' descarga' + (link.downloads===1?'':'s') + '</span>'
+        + '<span class="badge">' + expLabel + '</span>'
+        + '</div>'
+        + '<div class="la">'
+        + '<button class="btn btn-sm btn-out" data-url="' + url + '">📋 Copiar</button>'
+        + '<button class="btn btn-sm btn-red" data-token="' + token + '">🗑️ Eliminar</button>'
+        + '</div></div>';
+    }).join('');
+
+    el.querySelectorAll('.lu').forEach(function(e){
+      e.addEventListener('click', function(){ copyUrl(e.dataset.url); });
+    });
+    el.querySelectorAll('.btn-out[data-url]').forEach(function(e){
+      e.addEventListener('click', function(){ copyUrl(e.dataset.url); });
+    });
+    el.querySelectorAll('.btn-red[data-token]').forEach(function(e){
+      e.addEventListener('click', function(){ delLink(e.dataset.token); });
+    });
+  });
+}
+
+function copyUrl(url) {
+  navigator.clipboard.writeText(url).catch(function(){});
+  toast('📋 URL copiada');
+}
+
+function delLink(token) {
+  if (!confirm('¿Eliminar este link?')) return;
+  fetch('/api/links/' + token + '?password=' + pwd, {method:'DELETE'})
+    .then(function(){ loadLinks(); toast('🗑️ Link eliminado'); });
+}
+
+// ── UPLOAD ────────────────────────────────────────────────────────
+$('fileInput').addEventListener('change', function() {
+  var files = Array.from(this.files);
+  if (!files.length || !cur) return;
+  this.value = '';
+  uploadQueue(files, 0);
+});
+
+function uploadQueue(files, idx) {
+  if (idx >= files.length) {
+    $('uploadArea').style.display = 'none';
+    loadFiles(cur);
+    toast('✅ ' + files.length + ' archivo' + (files.length > 1 ? 's subidos' : ' subido'));
+    return;
+  }
+  var file = files[idx];
+  $('uploadArea').style.display = 'block';
+  $('uploadLabel').textContent = 'Subiendo ' + (idx + 1) + ' de ' + files.length + ': ' + file.name;
+  $('uploadBar').style.width = '0%';
+
+  var xhr = new XMLHttpRequest();
+  xhr.upload.onprogress = function(e) {
+    if (e.lengthComputable) {
+      $('uploadBar').style.width = Math.round(e.loaded / e.total * 100) + '%';
+    }
+  };
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      uploadQueue(files, idx + 1);
+    } else {
+      $('uploadArea').style.display = 'none';
+      var msg = '⚠️ Error ' + xhr.status;
+      try { var r = JSON.parse(xhr.responseText); if (r.error) msg += ': ' + r.error; } catch(e) {}
+      toast(msg, true);
+    }
+  };
+  xhr.onerror = function() {
+    $('uploadArea').style.display = 'none';
+    toast('⚠️ Error de red al subir ' + file.name, true);
+  };
+  xhr.open('POST', '/api/clients/' + encodeURIComponent(cur) + '/upload?password=' + pwd);
+  xhr.setRequestHeader('X-Filename', encodeURIComponent(file.name));
+  xhr.send(file);
+}
+
+// ── COPIAR URL DEL TÚNEL ──────────────────────────────────────────
+$('ngrokUrl').addEventListener('click', function() {
+  if (!ngrokBase) return;
+  navigator.clipboard.writeText(ngrokBase).catch(function(){});
+  toast('📋 URL copiada');
+});
+$('btnCopyTunnel').addEventListener('click', function() {
+  if (!ngrokBase) return;
+  navigator.clipboard.writeText(ngrokBase).catch(function(){});
+  toast('📋 URL copiada');
+});
+
+// ── MENÚ HAMBURGUESA ──────────────────────────────────────────────
+function openSidebar() {
+  $('sidebar').classList.add('open');
+  $('sideOverlay').classList.add('show');
+  $('btnMenu').innerHTML = '✕ <span>Cerrar</span>';
+}
+function closeSidebar() {
+  $('sidebar').classList.remove('open');
+  $('sideOverlay').classList.remove('show');
+  $('btnMenu').innerHTML = '☰ <span>Menú</span>';
+}
+$('btnMenu').addEventListener('click', function() {
+  if ($('sidebar').classList.contains('open')) closeSidebar();
+  else openSidebar();
+});
+$('sideOverlay').addEventListener('click', closeSidebar);
+
+// Cerrar sidebar al seleccionar cliente en móvil
+document.addEventListener('click', function(e) {
+  var ci = e.target.closest('.ci');
+  if (ci && window.innerWidth <= 900) closeSidebar();
+});
+</script>
+</body>
+</html>

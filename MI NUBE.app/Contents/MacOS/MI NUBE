@@ -1,0 +1,28 @@
+#!/bin/bash
+APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+ZIP="$APP_DIR/Contents/Resources/MI-NUBE.zip"
+clear
+echo '╔══════════════════════════════════╗'
+echo '║   ☁  MI NUBE - Instalador       ║'
+echo '╚══════════════════════════════════╝'
+echo ''
+echo '¿Dónde instalar MI NUBE?'
+echo '  1) Escritorio (recomendado)'
+echo '  2) Documentos'
+echo '  3) Descargas'
+echo ''
+printf 'Elige (1/2/3): '
+read OPCION
+case $OPCION in
+  1) DEST=$HOME/Desktop/MI-NUBE ;;
+  2) DEST=$HOME/Documents/MI-NUBE ;;
+  3) DEST=$HOME/Downloads/MI-NUBE ;;
+  *) DEST=$HOME/Desktop/MI-NUBE ;;
+esac
+echo ''
+echo "Extrayendo en $DEST..."
+mkdir -p "$DEST"
+unzip -o "$ZIP" -d "$DEST" > /dev/null 2>&1
+cd "$DEST"
+chmod +x instalar_mac.sh
+./instalar_mac.sh
