@@ -1,103 +1,71 @@
 const express=require("express");const path=require("path");const fs=require("fs");const crypto=require("crypto");const os=require("os");const {spawn}=require("child_process");const http=require("http");const app=express();const PORT=3000;const BASE_DIR=path.join(__dirname,"clientes");const DB_FILE=path.join(__dirname,"links.json");const PERMS_FILE=path.join(__dirname,"perms.json");const ADMIN_PASSWORD="admin123";if(fs.existsSync(BASE_DIR)===false)fs.mkdirSync(BASE_DIR,{recursive:true});function loadLinks(){if(fs.existsSync(DB_FILE)===false)return{};return JSON.parse(fs.readFileSync(DB_FILE,"utf8"));}function saveLinks(l){fs.writeFileSync(DB_FILE,JSON.stringify(l,null,2));}function loadPerms(){if(fs.existsSync(PERMS_FILE)===false)return{};return JSON.parse(fs.readFileSync(PERMS_FILE,"utf8"));}function savePerms(p){fs.writeFileSync(PERMS_FILE,JSON.stringify(p,null,2));}function auth(req){return(req.query.password||(req.body&&req.body.password))===ADMIN_PASSWORD;}
 
-// ── NGROK ──────────────────────────────────────────────────────────
-var ngrokUrl = null;
-var ngrokReady = false;
+// ── CLOUDFLARED ────────────────────────────────────────────────────
+var tunnelUrl = null;
+var tunnelReady = false;
 
-function findNgrokBin() {
+function findCloudflaredBin() {
   // 1. Buscar en la carpeta del proyecto
-  var local = path.join(__dirname, process.platform === "win32" ? "ngrok.exe" : "ngrok");
+  var local = path.join(__dirname, process.platform === "win32" ? "cloudflared.exe" : "cloudflared");
   if (fs.existsSync(local)) return local;
-  // 2. Buscar en rutas comunes de Homebrew (Mac)
-  var brewPaths = [
-    "/opt/homebrew/bin/ngrok",   // Apple Silicon
-    "/usr/local/bin/ngrok"       // Intel Mac
+  // 2. Buscar en rutas comunes de Mac
+  var macPaths = [
+    "/opt/homebrew/bin/cloudflared",
+    "/usr/local/bin/cloudflared"
   ];
-  for (var i = 0; i < brewPaths.length; i++) {
-    if (fs.existsSync(brewPaths[i])) return brewPaths[i];
+  for (var i = 0; i < macPaths.length; i++) {
+    if (fs.existsSync(macPaths[i])) return macPaths[i];
   }
   // 3. Intentar con el comando del sistema (en PATH)
-  return "ngrok";
+  return "cloudflared";
 }
 
 function startNgrok() {
-  if (ngrokReady) return; // ya está corriendo
-  var ngrokBin = findNgrokBin();
-  console.log("[ngrok] Usando binario: " + ngrokBin);
-  console.log("[ngrok] Iniciando túnel en puerto " + PORT + "...");
+  if (tunnelReady) return;
+  var bin = findCloudflaredBin();
+  console.log("[cloudflared] Usando binario: " + bin);
+  console.log("[cloudflared] Iniciando tunel en puerto " + PORT + "...");
 
-  var proc = spawn(ngrokBin, ["http", String(PORT)], {
-    detached: false,
-    env: Object.assign({}, process.env, { NGROK_AUTHTOKEN: "3BMI3u8dgRPZsinY6faIdZPXqeY_5dYZrX3bd7u8KQTyMGeMD" })
+  var proc = spawn(bin, ["tunnel", "--url", "http://localhost:" + PORT], {
+    detached: false
   });
 
   proc.stdout.on("data", function(d) {
     var msg = d.toString().trim();
-    if (msg) console.log("[ngrok] " + msg);
+    if (msg) console.log("[cloudflared] " + msg);
   });
 
   proc.stderr.on("data", function(d) {
-    var msg = d.toString().trim();
-    if (msg) console.log("[ngrok] " + msg);
+    var msg = d.toString();
+    var match = msg.match(/https:\/\/[a-z0-9\-]+\.trycloudflare\.com/);
+    if (match && !tunnelReady) {
+      tunnelUrl = match[0];
+      tunnelReady = true;
+      console.log("[cloudflared] Tunel listo: " + tunnelUrl);
+    }
   });
 
   proc.on("error", function(e) {
-    console.error("[ngrok] No se pudo iniciar ngrok: " + e.message);
-    console.error("[ngrok] Instala ngrok con: brew install ngrok");
+    console.error("[cloudflared] No se pudo iniciar: " + e.message);
   });
 
   proc.on("exit", function(code) {
     if (code !== 0 && code !== null) {
-      console.error("[ngrok] Proceso terminó con código " + code);
-      console.error("[ngrok] Si ves 'ERR_NGROK_105', ejecuta: ngrok config add-authtoken <TU_TOKEN>");
+      console.error("[cloudflared] Proceso termino con codigo " + code);
     }
   });
-
-  // Poll ngrok local API until tunnel is up
-  var attempts = 0;
-  var maxAttempts = 30;
-  function pollNgrok() {
-    attempts++;
-    var req = http.get("http://127.0.0.1:4040/api/tunnels", function(res) {
-      var body = "";
-      res.on("data", function(c) { body += c; });
-      res.on("end", function() {
-        try {
-          var data = JSON.parse(body);
-          var tunnels = data.tunnels || [];
-          var https = tunnels.find(function(t) { return t.proto === "https"; });
-          if (https) {
-            ngrokUrl = https.public_url;
-            ngrokReady = true;
-            console.log("[ngrok] ✅ Túnel listo: " + ngrokUrl);
-          } else if (attempts < maxAttempts) {
-            setTimeout(pollNgrok, 1000);
-          } else {
-            console.log("[ngrok] No se pudo obtener URL tras " + maxAttempts + " intentos.");
-          }
-        } catch(e) {
-          if (attempts < maxAttempts) setTimeout(pollNgrok, 1000);
-        }
-      });
-    });
-    req.on("error", function() {
-      if (attempts < maxAttempts) setTimeout(pollNgrok, 1000);
-    });
-  }
-
-  setTimeout(pollNgrok, 1500);
 }
 
-// Endpoint: return current ngrok URL
+// Endpoint: return current tunnel URL
 app.get("/api/ngrok-url", function(req, res) {
   if (!auth(req)) return res.status(401).json({});
-  res.json({ url: ngrokUrl, ready: ngrokReady });
+  res.json({ url: tunnelUrl, ready: tunnelReady });
 });
 
-// Endpoint: start ngrok on demand
+// Endpoint: start tunnel on demand
 app.post("/api/start-ngrok", function(req, res) {
   if (!auth(req)) return res.status(401).json({});
-  if (ngrokReady) return res.json({ ok: true, already: true });
+  if (tunnelReady) return res.json({ ok: true, already: true });
   startNgrok();
   res.json({ ok: true, started: true });
 });
